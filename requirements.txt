@@ -1,0 +1,10 @@
+streamlit
+pandas
+scikit-learn
+joblib
+sqlalchemy
+requests
+matplotlib
+shap
+numpy
+reportlab
