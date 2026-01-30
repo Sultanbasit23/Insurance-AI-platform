@@ -19,7 +19,7 @@ st.set_page_config(
 )
 
 
-# ================= MOBILE FRIENDLY =================
+# ================= MOBILE STYLE =================
 
 st.markdown("""
 <style>
@@ -40,11 +40,14 @@ input, select {
 """, unsafe_allow_html=True)
 
 
-# ================= DATABASE =================
+# ================= PATH =================
 
-DB_PATH = "users.db"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-conn_user = sqlite3.connect(DB_PATH, check_same_thread=False)
+
+# ================= USER DATABASE =================
+
+conn_user = sqlite3.connect("users.db", check_same_thread=False)
 cur_user = conn_user.cursor()
 
 cur_user.execute("""
@@ -58,7 +61,7 @@ CREATE TABLE IF NOT EXISTS users(
 conn_user.commit()
 
 
-# ================= CLAIM HISTORY DB =================
+# ================= CLAIM DATABASE =================
 
 conn = sqlite3.connect("memory.db", check_same_thread=False)
 cursor = conn.cursor()
@@ -80,14 +83,14 @@ CREATE TABLE IF NOT EXISTS claims_history(
 conn.commit()
 
 
-# ================= MODELS =================
+# ================= LOAD MODELS =================
 
 @st.cache_resource
 def load_models():
 
-    cost = joblib.load("cost_model.joblib")
-    claim = joblib.load("claim_model.joblib")
-    fraud = joblib.load("fraud_model.joblib")
+    cost = joblib.load(os.path.join(BASE_DIR,"cost_model.joblib"))
+    claim = joblib.load(os.path.join(BASE_DIR,"claim_model.joblib"))
+    fraud = joblib.load(os.path.join(BASE_DIR,"fraud_model.joblib"))
 
     return cost, claim, fraud
 
@@ -137,6 +140,10 @@ def detect_fraud(df):
     return fraud_model.predict_proba(df)[0][1]
 
 
+def ask_ai(text):
+    return "AI Assistant will be enabled in next update."
+
+
 # ================= SESSION =================
 
 if "login" not in st.session_state:
@@ -146,7 +153,7 @@ if "user" not in st.session_state:
     st.session_state.user = ""
 
 
-# ================= AUTH =================
+# ================= AUTH UI =================
 
 def login_ui():
 
@@ -171,7 +178,7 @@ def login_ui():
 
 def signup_ui():
 
-    st.subheader("📝 Create Account")
+    st.subheader("📝 Signup")
 
     u = st.text_input("New Username")
     p = st.text_input("New Password", type="password")
@@ -179,7 +186,8 @@ def signup_ui():
     if st.button("Register"):
 
         if len(u) < 3 or len(p) < 4:
-            st.warning("Username or password too short")
+
+            st.warning("Username/password too short")
             return
 
         if create_user(u, p):
@@ -187,6 +195,7 @@ def signup_ui():
             st.success("Account created. Login now.")
 
         else:
+
             st.error("Username already exists")
 
 
@@ -209,27 +218,30 @@ if not st.session_state.login:
 
 menu = st.sidebar.radio(
     "Menu",
-    ["Cost", "Claim", "History", "Profile", "Logout"]
+    ["Cost", "Claim", "History", "Profile", "Assistant", "Logout"]
 )
+
+
+st.sidebar.success(f"User: {st.session_state.user}")
 
 
 # ================= COST =================
 
 if menu == "Cost":
 
-    st.title("💰 Insurance Cost")
+    st.title("💰 Insurance Cost Predictor")
 
     with st.form("cost"):
 
-        age = st.number_input("Age", 18, 100, 25)
-        bmi = st.number_input("BMI", 10.0, 50.0, 22.0)
-        children = st.number_input("Children", 0, 5, 0)
+        age = st.number_input("Age",18,100,25)
+        bmi = st.number_input("BMI",10.0,50.0,22.0)
+        children = st.number_input("Children",0,5,0)
 
-        gender = st.selectbox("Gender", ["male", "female"])
-        smoker = st.selectbox("Smoker", ["yes", "no"])
+        gender = st.selectbox("Gender",["male","female"])
+        smoker = st.selectbox("Smoker",["yes","no"])
         region = st.selectbox(
             "Region",
-            ["southeast", "southwest", "northeast", "northwest"]
+            ["southeast","southwest","northeast","northwest"]
         )
 
         submit = st.form_submit_button("Predict")
@@ -239,16 +251,17 @@ if menu == "Cost":
 
         df = pd.DataFrame([[
 
-            age, bmi, children,
+            age,bmi,children,
 
-            1 if gender == "male" else 0,
-            1 if smoker == "yes" else 0,
+            1 if gender=="male" else 0,
+            1 if smoker=="yes" else 0,
 
-            1 if region == "northwest" else 0,
-            1 if region == "southeast" else 0,
-            1 if region == "southwest" else 0
+            1 if region=="northwest" else 0,
+            1 if region=="southeast" else 0,
+            1 if region=="southwest" else 0
 
         ]])
+
 
         cost = cost_model.predict(df)[0]
 
@@ -263,11 +276,11 @@ elif menu == "Claim":
 
     with st.form("claim"):
 
-        age = st.number_input("Age", 18, 100, 25)
-        policy = st.selectbox("Policy Type", [1, 2, 3])
-        amount = st.number_input("Amount", 0.0, step=1000.0)
-        days = st.number_input("Hospital Days", 0)
-        pre = st.selectbox("Pre Existing", [0, 1])
+        age = st.number_input("Age",18,100,25)
+        policy = st.selectbox("Policy Type",[1,2,3])
+        amount = st.number_input("Amount",0.0,step=1000.0)
+        days = st.number_input("Hospital Days",0)
+        pre = st.selectbox("Pre-existing",[0,1])
 
         submit = st.form_submit_button("Analyze")
 
@@ -275,8 +288,11 @@ elif menu == "Claim":
     if submit:
 
         df = pd.DataFrame([[
-            age, policy, amount, days, pre
+
+            age,policy,amount,days,pre
+
         ]])
+
 
         decision = claim_model.predict(df)[0]
 
@@ -293,9 +309,9 @@ elif menu == "Claim":
         cursor.execute("""
         INSERT INTO claims_history
         VALUES(NULL,?,?,?,?,?,?,?,?)
-        """, (
+        """,(
 
-            age, policy, amount, days, pre,
+            age,policy,amount,days,pre,
             decision,
             datetime.now().strftime("%Y-%m-%d %H:%M"),
             st.session_state.user
@@ -315,19 +331,21 @@ elif menu == "History":
         SELECT * FROM claims_history
         WHERE username=?
         ORDER BY id DESC
-    """, (st.session_state.user,)).fetchall()
+    """,(st.session_state.user,)).fetchall()
 
 
     if not rows:
+
         st.info("No history yet")
+
     else:
 
-        df = pd.DataFrame(rows, columns=[
+        df = pd.DataFrame(rows,columns=[
             "ID","Age","Policy","Amount",
             "Days","Pre","Decision","Date","User"
         ])
 
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df,use_container_width=True)
 
 
 # ================= PROFILE =================
@@ -340,7 +358,7 @@ elif menu == "Profile":
         SELECT decision, amount
         FROM claims_history
         WHERE username=?
-    """, (st.session_state.user,)).fetchall()
+    """,(st.session_state.user,)).fetchall()
 
 
     if not rows:
@@ -349,27 +367,40 @@ elif menu == "Profile":
         st.stop()
 
 
-    df = pd.DataFrame(rows, columns=["Decision", "Amount"])
+    df = pd.DataFrame(rows,columns=["Decision","Amount"])
 
 
     total = len(df)
 
     approved = df["Decision"].sum()
 
-    rejected = total - approved
+    rejected = total-approved
 
     avg = df["Amount"].mean()
 
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1,c2,c3,c4 = st.columns(4)
 
-    c1.metric("Total", total)
-    c2.metric("Approved", approved)
-    c3.metric("Rejected", rejected)
-    c4.metric("Average", f"₹{avg:,.0f}")
+    c1.metric("Total",total)
+    c2.metric("Approved",approved)
+    c3.metric("Rejected",rejected)
+    c4.metric("Average",f"₹{avg:,.0f}")
 
 
     st.bar_chart(df["Decision"].value_counts())
+
+
+# ================= ASSISTANT =================
+
+elif menu == "Assistant":
+
+    st.title("🤖 AI Assistant")
+
+    q = st.text_area("Ask Question")
+
+    if st.button("Send") and q:
+
+        st.write(ask_ai(q))
 
 
 # ================= LOGOUT =================
