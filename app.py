@@ -105,23 +105,33 @@ def load_models():
 cost_model, claim_model, fraud_model = load_models()
 
 
-# ================= SHAP =================
-
-cost_bg = pd.DataFrame([
-    [25,22,0,1,1,0,1,0],
-    [45,30,2,1,0,1,0,0],
-    [35,25,1,0,0,0,1,0],
-    [60,28,3,1,1,0,0,1]
-], columns=[
-    "age","bmi","children","sex_male","smoker_yes",
-    "region_northwest","region_southeast","region_southwest"
-])
 # ================= SHAP EXPLAINERS =================
 
 @st.cache_resource
 def load_explainers():
 
     cost, claim, fraud = load_models()
+
+    # Background data for cost model
+    cost_bg = pd.DataFrame([
+        [25,22,0,1,1,0,1,0],
+        [45,30,2,1,0,1,0,0],
+        [35,25,1,0,0,0,1,0],
+        [60,28,3,1,1,0,0,1]
+    ], columns=[
+        "age","bmi","children","sex_male","smoker_yes",
+        "region_northwest","region_southeast","region_southwest"
+    ])
+
+    # Background data for claim/fraud model
+    claim_bg = pd.DataFrame([
+        [25,1,50000,3,0],
+        [45,2,200000,10,1],
+        [35,1,75000,5,0],
+        [60,3,300000,15,1]
+    ], columns=[
+        "age","policy_type","claim_amount","hospital_days","pre_existing"
+    ])
 
     cost_exp = shap.Explainer(cost, cost_bg)
     claim_exp = shap.Explainer(claim, claim_bg)
@@ -131,17 +141,6 @@ def load_explainers():
 
 
 cost_explainer, claim_explainer, fraud_explainer = load_explainers()
-
-
-
-claim_bg = pd.DataFrame([
-    [25,1,50000,3,0],
-    [45,2,200000,10,1],
-    [35,1,75000,5,0],
-    [60,3,300000,15,1]
-], columns=[
-    "age","policy_type","claim_amount","hospital_days","pre_existing"
-])
 
 
 # ================= HELPERS =================
