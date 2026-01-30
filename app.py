@@ -94,9 +94,15 @@ conn.commit()
 
 # ================= MODELS =================
 
-cost_model = joblib.load("cost_model.joblib")
-claim_model = joblib.load("claim_model.joblib")
-fraud_model = joblib.load("fraud_model.joblib")
+@st.cache_resource
+def load_models():
+    cost = joblib.load("cost_model.joblib")
+    claim = joblib.load("claim_model.joblib")
+    fraud = joblib.load("fraud_model.joblib")
+    return cost, claim, fraud
+
+
+cost_model, claim_model, fraud_model = load_models()
 
 
 # ================= SHAP =================
@@ -110,8 +116,22 @@ cost_bg = pd.DataFrame([
     "age","bmi","children","sex_male","smoker_yes",
     "region_northwest","region_southeast","region_southwest"
 ])
+# ================= SHAP EXPLAINERS =================
 
-cost_explainer = shap.Explainer(cost_model, cost_bg)
+@st.cache_resource
+def load_explainers():
+
+    cost, claim, fraud = load_models()
+
+    cost_exp = shap.Explainer(cost, cost_bg)
+    claim_exp = shap.Explainer(claim, claim_bg)
+    fraud_exp = shap.Explainer(fraud, claim_bg)
+
+    return cost_exp, claim_exp, fraud_exp
+
+
+cost_explainer, claim_explainer, fraud_explainer = load_explainers()
+
 
 
 claim_bg = pd.DataFrame([
@@ -122,9 +142,6 @@ claim_bg = pd.DataFrame([
 ], columns=[
     "age","policy_type","claim_amount","hospital_days","pre_existing"
 ])
-
-claim_explainer = shap.Explainer(claim_model, claim_bg)
-fraud_explainer = shap.Explainer(fraud_model, claim_bg)
 
 
 # ================= HELPERS =================
