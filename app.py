@@ -140,8 +140,48 @@ def detect_fraud(df):
     return fraud_model.predict_proba(df)[0][1]
 
 
-def ask_ai(text):
-    return "AI Assistant will be enabled in next update."
+import requests
+
+
+HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
+
+
+def ask_ai(prompt):
+
+    api_key = st.secrets["HF_API_KEY"]
+
+    headers = {
+        "Authorization": f"Bearer {api_key}"
+    }
+
+    payload = {
+        "inputs": prompt,
+        "parameters": {
+            "max_new_tokens": 200,
+            "temperature": 0.7
+        }
+    }
+
+    try:
+
+        res = requests.post(
+            f"https://api-inference.huggingface.co/models/{HF_MODEL}",
+            headers=headers,
+            json=payload,
+            timeout=60
+        )
+
+        data = res.json()
+
+        if isinstance(data, list):
+            return data[0]["generated_text"]
+
+        return "AI response unavailable."
+
+    except Exception as e:
+
+        return "AI Error: " + str(e)
+
 
 
 # ================= SESSION =================

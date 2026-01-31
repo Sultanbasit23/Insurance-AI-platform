@@ -8,3 +8,4 @@ matplotlib
 shap
 numpy
 reportlab
+huggingface-hub
