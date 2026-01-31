@@ -155,28 +155,24 @@ def ask_ai(prompt):
             "Authorization": f"Bearer {api_key}"
         }
 
+        url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+
         payload = {
-            "inputs": f"You are an insurance advisor.\n{prompt}",
-            "parameters": {
-                "max_new_tokens": 200,
-                "temperature": 0.7
-            }
+            "inputs": prompt,
+            "parameters": {"max_new_tokens": 300}
         }
 
-        res = requests.post(
-            "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
-            headers=headers,
-            json=payload,
-            timeout=60
-        )
+        res = requests.post(url, headers=headers, json=payload, timeout=60)
 
-        if res.status_code == 200:
-            return res.json()[0]["generated_text"]
-        else:
-            return "AI service error"
+        data = res.json()
+
+        if isinstance(data, list):
+            return data[0]["generated_text"]
+
+        return "AI response error"
 
     except:
-        return "AI unavailable"
+        return "AI response unavailable."
 
 
 
@@ -409,7 +405,8 @@ elif menu == "Profile":
 
     total = len(df)
 
-    df["Decision"] = df["Decision"].astype(int)
+    df["Decision"] = df["Decision"].apply(lambda x: int.from_bytes(x, "little") if isinstance(x, bytes) else int(x))
+
 
     approved = df["Decision"].sum()
     rejected = total - approved
