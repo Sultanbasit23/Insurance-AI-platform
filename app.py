@@ -412,9 +412,11 @@ elif menu == "Profile":
 
     total = len(df)
 
-    approved = df["Decision"].sum()
+    df["Decision"] = df["Decision"].astype(int)
 
-    rejected = total-approved
+    approved = df["Decision"].sum()
+    rejected = total - approved
+
 
     avg = df["Amount"].mean()
 
