@@ -148,39 +148,36 @@ HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
 
 def ask_ai(prompt):
 
-    api_key = st.secrets["HF_API_KEY"]
-
-    headers = {
-        "Authorization": f"Bearer {api_key}"
-    }
-
-    payload = {
-        "inputs": prompt,
-        "parameters": {
-            "max_new_tokens": 200,
-            "temperature": 0.7
-        }
-    }
-
     try:
+        api_key = st.secrets["HF_API_KEY"]
+
+        headers = {
+            "Authorization": f"Bearer {api_key}"
+        }
+
+        payload = {
+            "inputs": f"You are an insurance advisor.\n{prompt}",
+            "parameters": {
+                "max_new_tokens": 200,
+                "temperature": 0.7
+            }
+        }
 
         res = requests.post(
-            f"https://api-inference.huggingface.co/models/{HF_MODEL}",
+            "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2",
             headers=headers,
             json=payload,
             timeout=60
         )
 
-        data = res.json()
+        if res.status_code == 200:
+            return res.json()[0]["generated_text"]
+        else:
+            return "AI service error"
 
-        if isinstance(data, list):
-            return data[0]["generated_text"]
+    except:
+        return "AI unavailable"
 
-        return "AI response unavailable."
-
-    except Exception as e:
-
-        return "AI Error: " + str(e)
 
 
 
