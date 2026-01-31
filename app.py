@@ -149,50 +149,29 @@ HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"
 def ask_ai(prompt):
 
     try:
-        api_key = st.secrets.get("HF_API_KEY", None)
-
-        if not api_key:
-            return "⚠️ HuggingFace API key not found."
-
-        headers = {
-            "Authorization": f"Bearer {api_key}"
-        }
-
-        url = "https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2"
+        url = "http://localhost:11434/api/generate"
 
         payload = {
-            "inputs": f"You are a professional insurance advisor.\n{prompt}",
-            "parameters": {
-                "max_new_tokens": 250,
-                "temperature": 0.7,
-                "return_full_text": False
-            }
+            "model": "mistral",
+            "prompt": f"You are a professional insurance advisor.\n{prompt}",
+            "stream": False
         }
 
         response = requests.post(
             url,
-            headers=headers,
             json=payload,
-            timeout=60
+            timeout=120
         )
 
         if response.status_code != 200:
-            return "⚠️ AI service busy. Try again later."
+            return "⚠️ Local AI not running."
 
         data = response.json()
 
-        # Different HF models return differently
-        if isinstance(data, list) and "generated_text" in data[0]:
-            return data[0]["generated_text"]
+        return data.get("response", "⚠️ No AI response.")
 
-        if isinstance(data, dict) and "generated_text" in data:
-            return data["generated_text"]
-
-        return "⚠️ AI response format error."
-
-    except Exception as e:
-        return f"⚠️ AI Error: {str(e)}"
-
+    except:
+        return "⚠️ Ollama is not running."
 
 
 # ================= SESSION =================
